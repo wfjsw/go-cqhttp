@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Mrs4s/go-cqhttp/coolq"
 	"github.com/gin-gonic/gin"
 	"github.com/guonaihong/gout"
 	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
+	"github.com/wfjsw/go-cqhttp/coolq"
 )
 
 type httpServer struct {
