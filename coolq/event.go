@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Mrs4s/MiraiGo/binary"
-	"github.com/Mrs4s/MiraiGo/client"
-	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Mrs4s/go-cqhttp/global"
 	log "github.com/sirupsen/logrus"
+	"github.com/wfjsw/MiraiGo/binary"
+	"github.com/wfjsw/MiraiGo/client"
+	"github.com/wfjsw/MiraiGo/message"
+	"github.com/wfjsw/go-cqhttp/global"
 )
 
 var format = "string"

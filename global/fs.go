@@ -20,9 +20,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/kardianos/osext"
-
 	"github.com/dustin/go-humanize"
+	"github.com/kardianos/osext"
 	log "github.com/sirupsen/logrus"
 )
 

@@ -4,9 +4,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Mrs4s/go-cqhttp/coolq"
-	"github.com/Mrs4s/go-cqhttp/global"
 	"github.com/tidwall/gjson"
+	"github.com/wfjsw/go-cqhttp/coolq"
+	"github.com/wfjsw/go-cqhttp/global"
 )
 
 type resultGetter interface {
@@ -88,13 +88,17 @@ func setFriendAddRequest(bot *coolq.CQBot, p resultGetter) coolq.MSG {
 func setGroupAddRequest(bot *coolq.CQBot, p resultGetter) coolq.MSG {
 	subType := p.Get("sub_type").Str
 	apr := true
+	blk := false
 	if subType == "" {
 		subType = p.Get("type").Str
 	}
 	if p.Get("approve").Exists() {
 		apr = p.Get("approve").Bool()
 	}
-	return bot.CQProcessGroupRequest(p.Get("flag").Str, subType, p.Get("reason").Str, apr)
+	if p.Get("block").Exists() {
+		blk = p.Get("block").Bool()
+	}
+	return bot.CQProcessGroupRequest(p.Get("flag").Str, subType, apr, blk, p.Get("reason").Str)
 }
 
 func setGroupCard(bot *coolq.CQBot, p resultGetter) coolq.MSG {
@@ -371,6 +375,10 @@ var API = map[string]func(*coolq.CQBot, resultGetter) coolq.MSG{
 	"check_url_safely":           checkUrlSafely,
 	"set_group_anonymous_ban":    setGroupAnonymousBan,
 	".handle_quick_operation":    handleQuickOperation,
+
+	"get_cookies":     getCookies,
+	"get_csrf_token":  getCSRFToken,
+	"get_credentials": getCredentials,
 }
 
 func (api *apiCaller) callAPI(action string, p resultGetter) coolq.MSG {
@@ -379,4 +387,16 @@ func (api *apiCaller) callAPI(action string, p resultGetter) coolq.MSG {
 	} else {
 		return coolq.Failed(404, "API_NOT_FOUND", "API不存在")
 	}
+}
+
+func getCookies(bot *coolq.CQBot, p resultGetter) coolq.MSG {
+	return bot.CQGetCookies(p.Get("domain").Str)
+}
+
+func getCSRFToken(bot *coolq.CQBot, p resultGetter) coolq.MSG {
+	return bot.CQGetCSRFToken()
+}
+
+func getCredentials(bot *coolq.CQBot, p resultGetter) coolq.MSG {
+	return bot.CQGetCredentials(p.Get("domain").Str)
 }

@@ -4,10 +4,6 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
-	"github.com/Mrs4s/MiraiGo/binary"
-	"github.com/Mrs4s/MiraiGo/client"
-	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/tidwall/gjson"
 	"io/ioutil"
 	"math"
 	"os"
@@ -18,8 +14,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Mrs4s/go-cqhttp/global"
 	log "github.com/sirupsen/logrus"
+	"github.com/tidwall/gjson"
+	"github.com/wfjsw/MiraiGo/binary"
+	"github.com/wfjsw/MiraiGo/client"
+	"github.com/wfjsw/MiraiGo/message"
+	"github.com/wfjsw/go-cqhttp/global"
 )
 
 // Version go-cqhttp的版本信息，在编译时使用ldflags进行覆盖
@@ -617,7 +617,7 @@ func (bot *CQBot) CQProcessFriendRequest(flag string, approve bool) MSG {
 // CQProcessGroupRequest 处理加群请求／邀请
 //
 // https://git.io/Jtz1D
-func (bot *CQBot) CQProcessGroupRequest(flag, subType, reason string, approve bool) MSG {
+func (bot *CQBot) CQProcessGroupRequest(flag, subType string, approve, block bool, reason string) MSG {
 	msgs, err := bot.Client.GetGroupSystemMessages()
 	if err != nil {
 		log.Errorf("获取群系统消息失败: %v", err)
@@ -633,7 +633,7 @@ func (bot *CQBot) CQProcessGroupRequest(flag, subType, reason string, approve bo
 				if approve {
 					req.Accept()
 				} else {
-					req.Reject(false, reason)
+					req.Reject(block, reason)
 				}
 				return OK(nil)
 			}
@@ -648,7 +648,7 @@ func (bot *CQBot) CQProcessGroupRequest(flag, subType, reason string, approve bo
 				if approve {
 					req.Accept()
 				} else {
-					req.Reject(false, reason)
+					req.Reject(block, reason)
 				}
 				return OK(nil)
 			}
@@ -902,7 +902,7 @@ func (bot *CQBot) CQHandleQuickOperation(context, operation gjson.Result) MSG {
 				bot.CQProcessFriendRequest(context.Get("flag").Str, operation.Get("approve").Bool())
 			}
 			if reqType == "group" {
-				bot.CQProcessGroupRequest(context.Get("flag").Str, context.Get("sub_type").Str, operation.Get("reason").Str, operation.Get("approve").Bool())
+				bot.CQProcessGroupRequest(context.Get("flag").Str, context.Get("sub_type").Str, operation.Get("approve").Bool(), operation.Get("block").Bool(), operation.Get("reason").Str)
 			}
 		}
 	}
@@ -1349,7 +1349,7 @@ func convertGroupMemberInfo(groupID int64, m *client.GroupMemberInfo) MSG {
 		"unfriendly":        false,
 		"title":             m.SpecialTitle,
 		"title_expire_time": m.SpecialTitleExpireTime,
-		"card_changeable":   false,
+		"card_changeable":   m.CardChangable(),
 	}
 }
 
@@ -1360,4 +1360,36 @@ func limitedString(str string) string {
 	limited := []rune(str)
 	limited = limited[:10]
 	return string(limited) + " ..."
+}
+
+func (bot *CQBot) CQGetCookies(domain string) MSG {
+	if domain == "" {
+		return OK(MSG{
+			"cookies": bot.Client.GetCookies(),
+		})
+	} else {
+		return OK(MSG{
+			"cookies": bot.Client.GetCookiesWithDomain(domain),
+		})
+	}
+}
+
+func (bot *CQBot) CQGetCSRFToken() MSG {
+	return OK(MSG{
+		"token": bot.Client.GetCSRFToken(),
+	})
+}
+
+func (bot *CQBot) CQGetCredentials(domain string) MSG {
+	if domain == "" {
+		return OK(MSG{
+			"cookies":    bot.Client.GetCookies(),
+			"csrf_token": bot.Client.GetCSRFToken(),
+		})
+	} else {
+		return OK(MSG{
+			"cookies":    bot.Client.GetCookiesWithDomain(domain),
+			"csrf_token": bot.Client.GetCSRFToken(),
+		})
+	}
 }

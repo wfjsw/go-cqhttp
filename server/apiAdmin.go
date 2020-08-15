@@ -15,16 +15,15 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Mrs4s/MiraiGo/utils"
 	"github.com/gin-contrib/pprof"
-
-	"github.com/Mrs4s/MiraiGo/client"
-	"github.com/Mrs4s/go-cqhttp/coolq"
-	"github.com/Mrs4s/go-cqhttp/global"
 	"github.com/gin-gonic/gin"
 	jsoniter "github.com/json-iterator/go"
 	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
+	"github.com/wfjsw/MiraiGo/client"
+	"github.com/wfjsw/MiraiGo/utils"
+	"github.com/wfjsw/go-cqhttp/coolq"
+	"github.com/wfjsw/go-cqhttp/global"
 	asciiart "github.com/yinghau76/go-ascii-art"
 )
 

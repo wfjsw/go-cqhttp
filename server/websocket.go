@@ -10,11 +10,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Mrs4s/go-cqhttp/coolq"
-	"github.com/Mrs4s/go-cqhttp/global"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
+	"github.com/wfjsw/go-cqhttp/coolq"
+	"github.com/wfjsw/go-cqhttp/global"
 )
 
 type webSocketServer struct {

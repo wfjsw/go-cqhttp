@@ -10,13 +10,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Mrs4s/go-cqhttp/coolq"
-	"github.com/Mrs4s/go-cqhttp/global"
 	"github.com/gin-gonic/gin"
 	"github.com/guonaihong/gout"
 	"github.com/guonaihong/gout/dataflow"
 	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
+	"github.com/wfjsw/go-cqhttp/coolq"
+	"github.com/wfjsw/go-cqhttp/global"
 )
 
 type httpServer struct {

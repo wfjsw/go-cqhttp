@@ -8,9 +8,6 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
-	"github.com/Mrs4s/go-cqhttp/global/terminal"
-	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
-	easy "github.com/t-tomalak/logrus-easy-formatter"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -25,18 +22,20 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Mrs4s/go-cqhttp/server"
 	"github.com/guonaihong/gout"
+	jsoniter "github.com/json-iterator/go"
+	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
+	log "github.com/sirupsen/logrus"
+	easy "github.com/t-tomalak/logrus-easy-formatter"
 	"github.com/tidwall/gjson"
+	"github.com/wfjsw/MiraiGo/binary"
+	"github.com/wfjsw/MiraiGo/client"
+	"github.com/wfjsw/go-cqhttp/coolq"
+	"github.com/wfjsw/go-cqhttp/global"
+	"github.com/wfjsw/go-cqhttp/global/terminal"
+	"github.com/wfjsw/go-cqhttp/server"
 	"golang.org/x/crypto/pbkdf2"
 	"golang.org/x/term"
-
-	"github.com/Mrs4s/MiraiGo/binary"
-	"github.com/Mrs4s/MiraiGo/client"
-	"github.com/Mrs4s/go-cqhttp/coolq"
-	"github.com/Mrs4s/go-cqhttp/global"
-	jsoniter "github.com/json-iterator/go"
-	log "github.com/sirupsen/logrus"
 )
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
@@ -169,6 +168,7 @@ func main() {
 		client.GenRandomDevice()
 		_ = ioutil.WriteFile("device.json", client.SystemDeviceInfo.ToJson(), 0644)
 		log.Info("已生成设备信息并保存到 device.json 文件.")
+		return
 	} else {
 		log.Info("将使用 device.json 内的设备信息运行Bot.")
 		if err := client.SystemDeviceInfo.ReadJson([]byte(global.ReadAllText("device.json"))); err != nil {

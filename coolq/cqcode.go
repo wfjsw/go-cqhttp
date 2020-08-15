@@ -22,12 +22,12 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/Mrs4s/MiraiGo/binary"
-	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Mrs4s/MiraiGo/utils"
-	"github.com/Mrs4s/go-cqhttp/global"
 	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
+	"github.com/wfjsw/MiraiGo/binary"
+	"github.com/wfjsw/MiraiGo/message"
+	"github.com/wfjsw/MiraiGo/utils"
+	"github.com/wfjsw/go-cqhttp/global"
 )
 
 /*

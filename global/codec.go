@@ -7,8 +7,8 @@ import (
 	"os/exec"
 	"path"
 
-	"github.com/Mrs4s/go-cqhttp/global/codec"
 	"github.com/pkg/errors"
+	"github.com/wfjsw/go-cqhttp/global/codec"
 )
 
 // EncoderSilk 将音频编码为Silk
