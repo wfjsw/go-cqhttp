@@ -152,6 +152,10 @@ func (s *httpServer) Run(addr, authToken string, bot *coolq.CQBot) {
 	s.engine.Any("/get_version_info", s.GetVersionInfo)
 	s.engine.Any("/get_version_info_async", s.GetVersionInfo)
 
+	s.engine.Any("/get_cookies", s.GetCookies)
+	s.engine.Any("/get_csrf_token", s.GetCSRFToken)
+	s.engine.Any("/get_credentials", s.GetCredentials)
+
 	s.engine.Any("/.handle_quick_operation", s.HandleQuickOperation)
 
 	go func() {
@@ -363,6 +367,18 @@ func (s *httpServer) GetStatus(c *gin.Context) {
 
 func (s *httpServer) GetVersionInfo(c *gin.Context) {
 	c.JSON(200, s.bot.CQGetVersionInfo())
+}
+
+func (s *httpServer) GetCookies(c *gin.Context) {
+	c.JSON(200, s.bot.CQGetCookies(getParamOrDefault(c, "domain", "")))
+}
+
+func (s *httpServer) GetCSRFToken(c *gin.Context) {
+	c.JSON(200, s.bot.CQGetCSRFToken())
+}
+
+func (s *httpServer) GetCredentials(c *gin.Context) {
+	c.JSON(200, s.bot.CQGetCredentials(getParamOrDefault(c, "domain", "")))
 }
 
 func (s *httpServer) HandleQuickOperation(c *gin.Context) {

@@ -113,6 +113,8 @@ github.com/wfjsw/MiraiGo v0.0.0-20200815122002-69575f0582e9 h1:ppDafX4nvIIlDntdH
 github.com/wfjsw/MiraiGo v0.0.0-20200815122002-69575f0582e9/go.mod h1:UNl91GDroLP+rgRUTslCoE/L3dBG+Yzk6AmphZmwWXU=
 github.com/wfjsw/MiraiGo v0.0.0-20200815185309-5ad145c10523 h1:2rTb5UTQWTBpCZuOOB9rxPI7MGXQFOk9xRAqxn7aiJs=
 github.com/wfjsw/MiraiGo v0.0.0-20200815185309-5ad145c10523/go.mod h1:UNl91GDroLP+rgRUTslCoE/L3dBG+Yzk6AmphZmwWXU=
+github.com/wfjsw/MiraiGo v0.0.0-20200816090351-4324d9aaccf2 h1:wlyExBnRpe0nZ2ZABig8B8j7kujRKlaVrQIUX73qmco=
+github.com/wfjsw/MiraiGo v0.0.0-20200816090351-4324d9aaccf2/go.mod h1:UNl91GDroLP+rgRUTslCoE/L3dBG+Yzk6AmphZmwWXU=
 github.com/xujiajun/gorouter v1.2.0/go.mod h1:yJrIta+bTNpBM/2UT8hLOaEAFckO+m/qmR3luMIQygM=
 github.com/xujiajun/mmap-go v1.0.1 h1:7Se7ss1fLPPRW+ePgqGpCkfGIZzJV6JPq9Wq9iv/WHc=
 github.com/xujiajun/mmap-go v1.0.1/go.mod h1:CNN6Sw4SL69Sui00p0zEzcZKbt+5HtEnYUsc6BKKRMg=

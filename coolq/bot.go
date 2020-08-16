@@ -5,16 +5,17 @@ import (
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
+	"hash/crc32"
+	"path"
+	"sync"
+	"time"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/wfjsw/MiraiGo/binary"
 	"github.com/wfjsw/MiraiGo/client"
 	"github.com/wfjsw/MiraiGo/message"
 	"github.com/wfjsw/go-cqhttp/global"
 	"github.com/xujiajun/nutsdb"
-	"hash/crc32"
-	"path"
-	"sync"
-	"time"
 )
 
 type CQBot struct {
@@ -171,6 +172,18 @@ func (bot *CQBot) InsertGroupMessage(m *message.GroupMessage) int32 {
 		}
 	}
 	return id
+}
+
+func (bot *CQBot) GetCookies() string {
+	return bot.Client.GetCookies()
+}
+
+func (bot *CQBot) GetCookiesWithDomain(domain string) string {
+	return bot.Client.GetCookiesWithDomain(domain)
+}
+
+func (bot *CQBot) GetCSRFToken() int {
+	return bot.Client.GetCSRFToken()
 }
 
 func ToGlobalId(code int64, msgId int32) int32 {

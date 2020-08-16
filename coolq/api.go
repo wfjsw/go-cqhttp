@@ -1,18 +1,19 @@
 package coolq
 
 import (
-	log "github.com/sirupsen/logrus"
-	"github.com/tidwall/gjson"
-	"github.com/wfjsw/MiraiGo/binary"
-	"github.com/wfjsw/MiraiGo/client"
-	"github.com/wfjsw/MiraiGo/message"
-	"github.com/wfjsw/go-cqhttp/global"
 	"io/ioutil"
 	"os"
 	"path"
 	"runtime"
 	"strconv"
 	"time"
+
+	log "github.com/sirupsen/logrus"
+	"github.com/tidwall/gjson"
+	"github.com/wfjsw/MiraiGo/binary"
+	"github.com/wfjsw/MiraiGo/client"
+	"github.com/wfjsw/MiraiGo/message"
+	"github.com/wfjsw/go-cqhttp/global"
 )
 
 // https://cqhttp.cc/docs/4.15/#/API?id=get_login_info-%E8%8E%B7%E5%8F%96%E7%99%BB%E5%BD%95%E5%8F%B7%E4%BF%A1%E6%81%AF
@@ -503,6 +504,38 @@ func (bot *CQBot) CQGetVersionInfo() MSG {
 		"runtime_version":            runtime.Version(),
 		"runtime_os":                 runtime.GOOS,
 	})
+}
+
+func (bot *CQBot) CQGetCookies(domain string) MSG {
+	if domain == "" {
+		return OK(MSG{
+			"cookies": bot.GetCookies(),
+		})
+	} else {
+		return OK(MSG{
+			"cookies": bot.GetCookiesWithDomain(domain),
+		})
+	}
+}
+
+func (bot *CQBot) CQGetCSRFToken() MSG {
+	return OK(MSG{
+		"token": bot.GetCSRFToken(),
+	})
+}
+
+func (bot *CQBot) CQGetCredentials(domain string) MSG {
+	if domain == "" {
+		return OK(MSG{
+			"cookies":    bot.GetCookies(),
+			"csrf_token": bot.GetCSRFToken(),
+		})
+	} else {
+		return OK(MSG{
+			"cookies":    bot.GetCookiesWithDomain(domain),
+			"csrf_token": bot.GetCSRFToken(),
+		})
+	}
 }
 
 func OK(data interface{}) MSG {
