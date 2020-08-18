@@ -97,11 +97,25 @@ func (bot *CQBot) CQGetGroupMemberInfo(groupId, userId int64, noCache bool) MSG 
 }
 
 // https://cqhttp.cc/docs/4.15/#/API?id=send_group_msg-%E5%8F%91%E9%80%81%E7%BE%A4%E6%B6%88%E6%81%AF
-func (bot *CQBot) CQSendGroupMessage(groupId int64, i interface{}) MSG {
+func (bot *CQBot) CQSendGroupMessage(groupId int64, i interface{}, autoEscape bool) MSG {
 	var str string
+	fixAt := func(elem []message.IMessageElement) {
+		for _, e := range elem {
+			if at, ok := e.(*message.AtElement); ok && at.Target != 0 {
+				at.Display = "@" + func() string {
+					mem := bot.Client.FindGroup(groupId).FindMember(at.Target)
+					if mem != nil {
+						return mem.DisplayName()
+					}
+					return strconv.FormatInt(at.Target, 10)
+				}()
+			}
+		}
+	}
 	if m, ok := i.(gjson.Result); ok {
 		if m.Type == gjson.JSON {
 			elem := bot.ConvertObjectMessage(m, true)
+			fixAt(elem)
 			mid := bot.SendGroupMessage(groupId, &message.SendingMessage{Elements: elem})
 			if mid == -1 {
 				return Failed(100)
@@ -114,20 +128,19 @@ func (bot *CQBot) CQSendGroupMessage(groupId int64, i interface{}) MSG {
 			}
 			return m.Raw
 		}()
-	}
-	if s, ok := i.(string); ok {
+	} else if s, ok := i.(string); ok {
 		str = s
 	}
 	if str == "" {
 		return Failed(100)
 	}
-	elem := bot.ConvertStringMessage(str, true)
-	// fix at display
-	for _, e := range elem {
-		if at, ok := e.(*message.AtElement); ok && at.Target != 0 {
-			at.Display = "@" + bot.Client.FindGroup(groupId).FindMember(at.Target).DisplayName()
-		}
+	var elem []message.IMessageElement
+	if autoEscape {
+		elem = append(elem, message.NewText(str))
+	} else {
+		elem = bot.ConvertStringMessage(str, true)
 	}
+	fixAt(elem)
 	mid := bot.SendGroupMessage(groupId, &message.SendingMessage{Elements: elem})
 	if mid == -1 {
 		return Failed(100)
@@ -206,7 +219,7 @@ func (bot *CQBot) CQSendGroupForwardMessage(groupId int64, m gjson.Result) MSG {
 }
 
 // https://cqhttp.cc/docs/4.15/#/API?id=send_private_msg-%E5%8F%91%E9%80%81%E7%A7%81%E8%81%8A%E6%B6%88%E6%81%AF
-func (bot *CQBot) CQSendPrivateMessage(userId int64, i interface{}) MSG {
+func (bot *CQBot) CQSendPrivateMessage(userId int64, i interface{}, autoEscape bool) MSG {
 	var str string
 	if m, ok := i.(gjson.Result); ok {
 		if m.Type == gjson.JSON {
@@ -223,14 +236,18 @@ func (bot *CQBot) CQSendPrivateMessage(userId int64, i interface{}) MSG {
 			}
 			return m.Raw
 		}()
-	}
-	if s, ok := i.(string); ok {
+	} else if s, ok := i.(string); ok {
 		str = s
 	}
 	if str == "" {
 		return Failed(100)
 	}
-	elem := bot.ConvertStringMessage(str, false)
+	var elem []message.IMessageElement
+	if autoEscape {
+		elem = append(elem, message.NewText(str))
+	} else {
+		elem = bot.ConvertStringMessage(str, false)
+	}
 	mid := bot.SendPrivateMessage(userId, &message.SendingMessage{Elements: elem})
 	if mid == -1 {
 		return Failed(100)
@@ -369,6 +386,7 @@ func (bot *CQBot) CQHandleQuickOperation(context, operation gjson.Result) MSG {
 		msgType := context.Get("message_type").Str
 		reply := operation.Get("reply")
 		if reply.Exists() {
+			autoEscape := global.EnsureBool(operation.Get("auto_escape"), false)
 			/*
 				at := true
 				if operation.Get("at_sender").Exists() {
@@ -377,10 +395,10 @@ func (bot *CQBot) CQHandleQuickOperation(context, operation gjson.Result) MSG {
 			*/
 			// TODO: 处理at字段
 			if msgType == "group" {
-				bot.CQSendGroupMessage(context.Get("group_id").Int(), reply)
+				bot.CQSendGroupMessage(context.Get("group_id").Int(), reply, autoEscape)
 			}
 			if msgType == "private" {
-				bot.CQSendPrivateMessage(context.Get("user_id").Int(), reply)
+				bot.CQSendPrivateMessage(context.Get("user_id").Int(), reply, autoEscape)
 			}
 		}
 		if msgType == "group" {
@@ -405,12 +423,12 @@ func (bot *CQBot) CQHandleQuickOperation(context, operation gjson.Result) MSG {
 		}
 	case "request":
 		reqType := context.Get("request_type").Str
-		if context.Get("approve").Bool() {
+		if operation.Get("approve").Exists() {
 			if reqType == "friend" {
-				bot.CQProcessFriendRequest(context.Get("flag").Str, true)
+				bot.CQProcessFriendRequest(context.Get("flag").Str, operation.Get("approve").Bool())
 			}
 			if reqType == "group" {
-				bot.CQProcessGroupRequest(context.Get("flag").Str, context.Get("sub_type").Str, true)
+				bot.CQProcessGroupRequest(context.Get("flag").Str, context.Get("sub_type").Str, operation.Get("approve").Bool())
 			}
 		}
 	}
