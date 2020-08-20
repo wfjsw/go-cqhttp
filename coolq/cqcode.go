@@ -1,6 +1,7 @@
 package coolq
 
 import (
+	"crypto/md5"
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
@@ -261,10 +262,23 @@ func (bot *CQBot) ToElement(t string, d map[string]string, group bool) (message.
 	case "image":
 		f := d["file"]
 		if strings.HasPrefix(f, "http") || strings.HasPrefix(f, "https") {
+			cache := d["cache"]
+			if cache == "" {
+				cache = "1"
+			}
+			hash := md5.Sum([]byte(f))
+			cacheFile := path.Join(global.CACHE_PATH, hex.EncodeToString(hash[:])+".cache")
+			if global.PathExists(cacheFile) && cache == "1" {
+				b, err := ioutil.ReadFile(cacheFile)
+				if err == nil {
+					return message.NewImage(b), nil
+				}
+			}
 			b, err := global.GetBytes(f)
 			if err != nil {
 				return nil, err
 			}
+			_ = ioutil.WriteFile(cacheFile, b, 0644)
 			return message.NewImage(b), nil
 		}
 		if strings.HasPrefix(f, "base64") {
@@ -385,7 +399,7 @@ func (bot *CQBot) ToElement(t string, d map[string]string, group bool) (message.
 			}
 			data = b
 		}
-		if !global.IsAMR(data) {
+		if !global.IsAMRorSILK(data) {
 			return nil, errors.New("unsupported voice file format (please use AMR file for now)")
 		}
 		return &message.VoiceElement{Data: data}, nil

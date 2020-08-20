@@ -35,8 +35,11 @@ func (bot *CQBot) CQGetFriendList() MSG {
 }
 
 // https://cqhttp.cc/docs/4.15/#/API?id=get_group_list-%E8%8E%B7%E5%8F%96%E7%BE%A4%E5%88%97%E8%A1%A8
-func (bot *CQBot) CQGetGroupList() MSG {
+func (bot *CQBot) CQGetGroupList(noCache bool) MSG {
 	var gs []MSG
+	if noCache {
+		_ = bot.Client.ReloadGroupList()
+	}
 	for _, g := range bot.Client.GroupList {
 		gs = append(gs, MSG{
 			"group_id":         g.Code,
@@ -375,6 +378,61 @@ func (bot *CQBot) CQDeleteMessage(messageId int32) MSG {
 	}
 	bot.Client.RecallGroupMessage(msg["group"].(int64), msg["message-id"].(int32), msg["internal-id"].(int32))
 	return OK(nil)
+}
+
+// https://github.com/howmanybots/onebot/blob/master/v11/specs/api/public.md#get_group_honor_info-%E8%8E%B7%E5%8F%96%E7%BE%A4%E8%8D%A3%E8%AA%89%E4%BF%A1%E6%81%AF
+func (bot *CQBot) CQGetGroupHonorInfo(groupId int64, t string) MSG {
+	msg := MSG{"group_id": groupId}
+	convertMem := func(memList []client.HonorMemberInfo) (ret []MSG) {
+		for _, mem := range memList {
+			ret = append(ret, MSG{
+				"user_id":     mem.Uin,
+				"nickname":    mem.Name,
+				"avatar":      mem.Avatar,
+				"description": mem.Desc,
+			})
+		}
+		return
+	}
+	if t == "talkative" || t == "all" {
+		if honor, err := bot.Client.GetGroupHonorInfo(groupId, client.Talkative); err == nil {
+			if honor.CurrentTalkative.Uin != 0 {
+				msg["current_talkative"] = MSG{
+					"user_id":   honor.CurrentTalkative.Uin,
+					"nickname":  honor.CurrentTalkative.Name,
+					"avatar":    honor.CurrentTalkative.Avatar,
+					"day_count": honor.CurrentTalkative.DayCount,
+				}
+			}
+			msg["talkative_list"] = convertMem(honor.TalkativeList)
+		}
+	}
+
+	if t == "performer" || t == "all" {
+		if honor, err := bot.Client.GetGroupHonorInfo(groupId, client.Performer); err == nil {
+			msg["performer_lis"] = convertMem(honor.ActorList)
+		}
+	}
+
+	if t == "legend" || t == "all" {
+		if honor, err := bot.Client.GetGroupHonorInfo(groupId, client.Legend); err == nil {
+			msg["legend_list"] = convertMem(honor.LegendList)
+		}
+	}
+
+	if t == "strong_newbie" || t == "all" {
+		if honor, err := bot.Client.GetGroupHonorInfo(groupId, client.StrongNewbie); err == nil {
+			msg["strong_newbie_list"] = convertMem(honor.StrongNewbieList)
+		}
+	}
+
+	if t == "emotion" || t == "all" {
+		if honor, err := bot.Client.GetGroupHonorInfo(groupId, client.Emotion); err == nil {
+			msg["emotion_list"] = convertMem(honor.EmotionList)
+		}
+	}
+
+	return OK(msg)
 }
 
 // https://cqhttp.cc/docs/4.15/#/API?id=-handle_quick_operation-%E5%AF%B9%E4%BA%8B%E4%BB%B6%E6%89%A7%E8%A1%8C%E5%BF%AB%E9%80%9F%E6%93%8D%E4%BD%9C
