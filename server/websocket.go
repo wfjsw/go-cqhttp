@@ -177,34 +177,39 @@ func (c *websocketClient) listenApi(conn *websocketConn, u bool) {
 
 func (c *websocketClient) onBotPushEvent(m coolq.MSG) {
 	if c.eventConn != nil {
-		log.Debugf("向WS服务器 %v 推送Event: %v", c.eventConn.RemoteAddr().String(), m.ToJson())
-		c.eventConn.writeLock.Lock()
-		defer c.eventConn.writeLock.Unlock()
-		if err := c.eventConn.WriteText(m.ToJson()); err != nil {
-			log.Warnf("向WS服务器 %v 推送Event时出现错误: %v", c.eventConn.RemoteAddr().String(), err)
-			_ = c.eventConn.Close()
-			if c.conf.ReverseReconnectInterval != 0 {
-				go func() {
-					time.Sleep(time.Millisecond * time.Duration(c.conf.ReverseReconnectInterval))
-					c.connectEvent()
-				}()
+		func() {
+			log.Debugf("向WS服务器 %v 推送Event: %v", c.eventConn.RemoteAddr().String(), m.ToJson())
+			c.eventConn.writeLock.Lock()
+			defer c.eventConn.writeLock.Unlock()
+			if err := c.eventConn.WriteText(m.ToJson()); err != nil {
+				log.Warnf("向WS服务器 %v 推送Event时出现错误: %v", c.eventConn.RemoteAddr().String(), err)
+				_ = c.eventConn.Close()
+				if c.conf.ReverseReconnectInterval != 0 {
+					go func() {
+						time.Sleep(time.Millisecond * time.Duration(c.conf.ReverseReconnectInterval))
+						c.connectEvent()
+					}()
+				}
 			}
-		}
+		}()
+
 	}
 	if c.universalConn != nil {
-		log.Debugf("向WS服务器 %v 推送Event: %v", c.universalConn.RemoteAddr().String(), m.ToJson())
-		c.universalConn.writeLock.Lock()
-		defer c.universalConn.writeLock.Unlock()
-		if err := c.universalConn.WriteText(m.ToJson()); err != nil {
-			log.Warnf("向WS服务器 %v 推送Event时出现错误: %v", c.universalConn.RemoteAddr().String(), err)
-			_ = c.universalConn.Close()
-			if c.conf.ReverseReconnectInterval != 0 {
-				go func() {
-					time.Sleep(time.Millisecond * time.Duration(c.conf.ReverseReconnectInterval))
-					c.connectUniversal()
-				}()
+		func() {
+			log.Debugf("向WS服务器 %v 推送Event: %v", c.universalConn.RemoteAddr().String(), m.ToJson())
+			c.universalConn.writeLock.Lock()
+			defer c.universalConn.writeLock.Unlock()
+			if err := c.universalConn.WriteText(m.ToJson()); err != nil {
+				log.Warnf("向WS服务器 %v 推送Event时出现错误: %v", c.universalConn.RemoteAddr().String(), err)
+				_ = c.universalConn.Close()
+				if c.conf.ReverseReconnectInterval != 0 {
+					go func() {
+						time.Sleep(time.Millisecond * time.Duration(c.conf.ReverseReconnectInterval))
+						c.connectUniversal()
+					}()
+				}
 			}
-		}
+		}()
 	}
 }
 
@@ -325,7 +330,9 @@ func (s *websocketServer) onBotPushEvent(m coolq.MSG) {
 	pos := 0
 	for _, conn := range s.eventConn {
 		log.Debugf("向WS客户端 %v 推送Event: %v", conn.RemoteAddr().String(), m.ToJson())
+		conn.writeLock.Lock()
 		err := conn.WriteMessage(websocket.TextMessage, []byte(m.ToJson()))
+		conn.writeLock.Unlock()
 		if err != nil {
 			_ = conn.Close()
 			s.eventConn = append(s.eventConn[:pos], s.eventConn[pos+1:]...)
