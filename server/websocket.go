@@ -313,7 +313,11 @@ func (c *websocketConn) handleRequest(bot *coolq.CQBot, payload []byte) {
 		}
 		c.writeLock.Lock()
 		defer c.writeLock.Unlock()
-		_ = c.WriteText(ret.ToJson())
+		err := c.WriteText(ret.ToJson())
+		if err != nil {
+			log.Warnf("写入 Websocket 请求结果时出现错误: %v", err)
+		}
+		log.Debugf("WS写入调用结果：%v", ret.ToJson())
 	}
 }
 
