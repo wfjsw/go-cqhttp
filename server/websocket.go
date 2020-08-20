@@ -430,6 +430,15 @@ var wsApi = map[string]func(*coolq.CQBot, gjson.Result) coolq.MSG{
 	"get_version_info": func(bot *coolq.CQBot, p gjson.Result) coolq.MSG {
 		return bot.CQGetVersionInfo()
 	},
+	"get_cookies": func(bot *coolq.CQBot, p gjson.Result) coolq.MSG {
+		return bot.CQGetCookies(p.Get("domain").String())
+	},
+	"get_csrf_token": func(bot *coolq.CQBot, p gjson.Result) coolq.MSG {
+		return bot.CQGetCSRFToken()
+	},
+	"get_credentials": func(bot *coolq.CQBot, p gjson.Result) coolq.MSG {
+		return bot.CQGetCredentials(p.Get("domain").String())
+	},
 	".handle_quick_operation": func(bot *coolq.CQBot, p gjson.Result) coolq.MSG {
 		return bot.CQHandleQuickOperation(p.Get("context"), p.Get("operation"))
 	},
