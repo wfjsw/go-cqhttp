@@ -365,15 +365,15 @@ var wsApi = map[string]func(*coolq.CQBot, gjson.Result) coolq.MSG{
 		return bot.CQProcessFriendRequest(p.Get("flag").Str, apr)
 	},
 	"set_group_add_request": func(bot *coolq.CQBot, p gjson.Result) coolq.MSG {
-		subType := p.Get("sub_type").Str
+		subType := p.Get("sub_type").String()
 		apr := true
 		if subType == "" {
-			subType = p.Get("type").Str
+			subType = p.Get("type").String()
 		}
 		if p.Get("approve").Exists() {
 			apr = p.Get("approve").Bool()
 		}
-		return bot.CQProcessGroupRequest(p.Get("flag").Str, subType, apr)
+		return bot.CQProcessGroupRequest(p.Get("flag").Str, subType, apr, p.Get("block").Bool(), p.Get("reason").String())
 	},
 	"set_group_card": func(bot *coolq.CQBot, p gjson.Result) coolq.MSG {
 		return bot.CQSetGroupCard(p.Get("group_id").Int(), p.Get("user_id").Int(), p.Get("card").Str)
