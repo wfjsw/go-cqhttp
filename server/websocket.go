@@ -44,6 +44,10 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
+func (c *websocketConn) WriteText(text string) error {
+	return c.WriteMessage(websocket.TextMessage, []byte(text))
+}
+
 func (s *websocketServer) Run(addr, authToken string, b *coolq.CQBot) {
 	s.token = authToken
 	s.bot = b
@@ -176,7 +180,7 @@ func (c *websocketClient) onBotPushEvent(m coolq.MSG) {
 		log.Debugf("向WS服务器 %v 推送Event: %v", c.eventConn.RemoteAddr().String(), m.ToJson())
 		c.eventConn.writeLock.Lock()
 		defer c.eventConn.writeLock.Unlock()
-		if err := c.eventConn.WriteJSON(m); err != nil {
+		if err := c.eventConn.WriteText(m.ToJson()); err != nil {
 			log.Warnf("向WS服务器 %v 推送Event时出现错误: %v", c.eventConn.RemoteAddr().String(), err)
 			_ = c.eventConn.Close()
 			if c.conf.ReverseReconnectInterval != 0 {
@@ -191,7 +195,7 @@ func (c *websocketClient) onBotPushEvent(m coolq.MSG) {
 		log.Debugf("向WS服务器 %v 推送Event: %v", c.universalConn.RemoteAddr().String(), m.ToJson())
 		c.universalConn.writeLock.Lock()
 		defer c.universalConn.writeLock.Unlock()
-		if err := c.universalConn.WriteJSON(m); err != nil {
+		if err := c.universalConn.WriteText(m.ToJson()); err != nil {
 			log.Warnf("向WS服务器 %v 推送Event时出现错误: %v", c.universalConn.RemoteAddr().String(), err)
 			_ = c.universalConn.Close()
 			if c.conf.ReverseReconnectInterval != 0 {
@@ -309,7 +313,7 @@ func (c *websocketConn) handleRequest(bot *coolq.CQBot, payload []byte) {
 		}
 		c.writeLock.Lock()
 		defer c.writeLock.Unlock()
-		_ = c.WriteJSON(ret)
+		_ = c.WriteText(ret.ToJson())
 	}
 }
 
