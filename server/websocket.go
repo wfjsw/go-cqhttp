@@ -160,21 +160,7 @@ func (c *websocketClient) listenApi(conn *websocketConn, u bool) {
 			break
 		}
 
-		go func() {
-			j := gjson.ParseBytes(buf)
-			t := strings.ReplaceAll(j.Get("action").Str, "_async", "")
-			log.Debugf("反向WS接收到API调用: %v 参数: %v", t, j.Get("params").Raw)
-			if f, ok := wsApi[t]; ok {
-				ret := f(c.bot, j.Get("params"))
-				if j.Get("echo").Exists() {
-					ret["echo"] = j.Get("echo").Value()
-				}
-				conn.writeLock.Lock()
-				log.Debugf("准备发送API %v 处理结果: %v", t, ret.ToJson())
-				_ = conn.WriteJSON(ret)
-				conn.writeLock.Unlock()
-			}
-		}()
+		go conn.handleRequest(c.bot, buf)
 
 	}
 	if c.conf.ReverseReconnectInterval != 0 {
@@ -299,23 +285,31 @@ func (s *websocketServer) listenApi(c *websocketConn) {
 			break
 		}
 
-		go func() {
-			if t == websocket.TextMessage {
-				j := gjson.ParseBytes(payload)
-				t := strings.ReplaceAll(j.Get("action").Str, "_async", "")
-				log.Debugf("WS接收到API调用: %v 参数: %v", t, j.Get("params").Raw)
-				if f, ok := wsApi[t]; ok {
-					ret := f(s.bot, j.Get("params"))
-					if j.Get("echo").Exists() {
-						ret["echo"] = j.Get("echo").Value()
-					}
-					c.writeLock.Lock()
-					defer c.writeLock.Unlock()
-					_ = c.WriteJSON(ret)
-				}
-			}
-		}()
+		if t == websocket.TextMessage {
+			go c.handleRequest(s.bot, payload)
+		}
+	}
+}
 
+func (c *websocketConn) handleRequest(bot *coolq.CQBot, payload []byte) {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Printf("处置WS命令时发生无法恢复的异常：%v", err)
+			c.Close()
+		}
+	}()
+
+	j := gjson.ParseBytes(payload)
+	t := strings.ReplaceAll(j.Get("action").Str, "_async", "")
+	log.Debugf("WS接收到API调用: %v 参数: %v", t, j.Get("params").Raw)
+	if f, ok := wsApi[t]; ok {
+		ret := f(bot, j.Get("params"))
+		if j.Get("echo").Exists() {
+			ret["echo"] = j.Get("echo").Value()
+		}
+		c.writeLock.Lock()
+		defer c.writeLock.Unlock()
+		_ = c.WriteJSON(ret)
 	}
 }
 
