@@ -34,7 +34,7 @@ type websocketClient struct {
 
 type websocketConn struct {
 	*websocket.Conn
-	writeLock sync.Mutex
+	sync.Mutex
 }
 
 var WebsocketServer = &websocketServer{}
@@ -179,9 +179,9 @@ func (c *websocketClient) onBotPushEvent(m coolq.MSG) {
 	if c.eventConn != nil {
 		func() {
 			log.Debugf("向WS服务器 %v 推送Event: %v", c.eventConn.RemoteAddr().String(), m.ToJson())
-			c.eventConn.writeLock.Lock()
-			defer c.eventConn.writeLock.Unlock()
-			if err := c.eventConn.WriteText(m.ToJson()); err != nil {
+			c.eventConn.Lock()
+			defer c.eventConn.Unlock()
+			if err := c.eventConn.WriteJSON(m); err != nil {
 				log.Warnf("向WS服务器 %v 推送Event时出现错误: %v", c.eventConn.RemoteAddr().String(), err)
 				_ = c.eventConn.Close()
 				if c.conf.ReverseReconnectInterval != 0 {
@@ -197,9 +197,9 @@ func (c *websocketClient) onBotPushEvent(m coolq.MSG) {
 	if c.universalConn != nil {
 		func() {
 			log.Debugf("向WS服务器 %v 推送Event: %v", c.universalConn.RemoteAddr().String(), m.ToJson())
-			c.universalConn.writeLock.Lock()
-			defer c.universalConn.writeLock.Unlock()
-			if err := c.universalConn.WriteText(m.ToJson()); err != nil {
+			c.universalConn.Lock()
+			defer c.universalConn.Unlock()
+			if err := c.universalConn.WriteJSON(m); err != nil {
 				log.Warnf("向WS服务器 %v 推送Event时出现错误: %v", c.universalConn.RemoteAddr().String(), err)
 				_ = c.universalConn.Close()
 				if c.conf.ReverseReconnectInterval != 0 {
@@ -316,9 +316,9 @@ func (c *websocketConn) handleRequest(bot *coolq.CQBot, payload []byte) {
 		if j.Get("echo").Exists() {
 			ret["echo"] = j.Get("echo").Value()
 		}
-		c.writeLock.Lock()
-		defer c.writeLock.Unlock()
-		err := c.WriteText(ret.ToJson())
+		c.Lock()
+		defer c.Unlock()
+		err := c.WriteJSON(ret)
 		if err != nil {
 			log.Warnf("写入 Websocket 请求结果时出现错误: %v", err)
 		}
@@ -329,18 +329,20 @@ func (c *websocketConn) handleRequest(bot *coolq.CQBot, payload []byte) {
 func (s *websocketServer) onBotPushEvent(m coolq.MSG) {
 	pos := 0
 	for _, conn := range s.eventConn {
-		log.Debugf("向WS客户端 %v 推送Event: %v", conn.RemoteAddr().String(), m.ToJson())
-		conn.writeLock.Lock()
-		err := conn.WriteMessage(websocket.TextMessage, []byte(m.ToJson()))
-		conn.writeLock.Unlock()
-		if err != nil {
-			_ = conn.Close()
-			s.eventConn = append(s.eventConn[:pos], s.eventConn[pos+1:]...)
-			if pos > 0 {
-				pos++
+		func() {
+			log.Debugf("向WS客户端 %v 推送Event: %v", conn.RemoteAddr().String(), m.ToJson())
+			conn.Lock()
+			defer conn.Unlock()
+			err := conn.WriteMessage(websocket.TextMessage, []byte(m.ToJson()))
+			if err != nil {
+				_ = conn.Close()
+				s.eventConn = append(s.eventConn[:pos], s.eventConn[pos+1:]...)
+				if pos > 0 {
+					pos++
+				}
 			}
-		}
-		pos++
+			pos++
+		}()
 	}
 }
 

@@ -16,6 +16,8 @@ import (
 	"github.com/wfjsw/go-cqhttp/global"
 )
 
+var version = "unknown"
+
 // https://cqhttp.cc/docs/4.15/#/API?id=get_login_info-%E8%8E%B7%E5%8F%96%E7%99%BB%E5%BD%95%E5%8F%B7%E4%BF%A1%E6%81%AF
 func (bot *CQBot) CQGetLoginInfo() MSG {
 	return OK(MSG{"user_id": bot.Client.Uin, "nickname": bot.Client.Nickname})
@@ -135,6 +137,7 @@ func (bot *CQBot) CQSendGroupMessage(groupId int64, i interface{}, autoEscape bo
 		str = s
 	}
 	if str == "" {
+		log.Warnf("群消息发送失败: 信息为空. MSG: %v", i)
 		return Failed(100)
 	}
 	var elem []message.IMessageElement
@@ -346,16 +349,15 @@ func (bot *CQBot) CQProcessFriendRequest(flag string, approve bool) MSG {
 func (bot *CQBot) CQProcessGroupRequest(flag, subType string, approve, block bool, reason string) MSG {
 	if subType == "add" {
 		req, ok := bot.joinReqCache.Load(flag)
-		if !ok {
-			return Failed(100)
+		if ok {
+			bot.joinReqCache.Delete(flag)
+			if approve {
+				req.(*client.UserJoinGroupRequest).Accept()
+			} else {
+				req.(*client.UserJoinGroupRequest).Reject(block, reason)
+			}
+			return OK(nil)
 		}
-		bot.joinReqCache.Delete(flag)
-		if approve {
-			req.(*client.UserJoinGroupRequest).Accept()
-		} else {
-			req.(*client.UserJoinGroupRequest).Reject(block, reason)
-		}
-		return OK(nil)
 	} else {
 		req, ok := bot.invitedReqCache.Load(flag)
 		if ok {
@@ -367,8 +369,8 @@ func (bot *CQBot) CQProcessGroupRequest(flag, subType string, approve, block boo
 			}
 			return OK(nil)
 		}
-		return Failed(100)
 	}
+	return Failed(100)
 }
 
 // https://cqhttp.cc/docs/4.15/#/API?id=delete_msg-%E6%92%A4%E5%9B%9E%E6%B6%88%E6%81%AF
@@ -580,6 +582,7 @@ func (bot *CQBot) CQGetVersionInfo() MSG {
 		"plugin_build_configuration": "release",
 		"runtime_version":            runtime.Version(),
 		"runtime_os":                 runtime.GOOS,
+		"version":                    version,
 	})
 }
 
