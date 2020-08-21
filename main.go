@@ -7,15 +7,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
-	log "github.com/sirupsen/logrus"
-	easy "github.com/t-tomalak/logrus-easy-formatter"
-	"github.com/wfjsw/MiraiGo/binary"
-	"github.com/wfjsw/MiraiGo/client"
-	"github.com/wfjsw/go-cqhttp/coolq"
-	"github.com/wfjsw/go-cqhttp/global"
-	"github.com/wfjsw/go-cqhttp/server"
-	asciiart "github.com/yinghau76/go-ascii-art"
 	"image"
 	"io"
 	"io/ioutil"
@@ -25,6 +16,16 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
+	log "github.com/sirupsen/logrus"
+	easy "github.com/t-tomalak/logrus-easy-formatter"
+	"github.com/wfjsw/MiraiGo/binary"
+	"github.com/wfjsw/MiraiGo/client"
+	"github.com/wfjsw/go-cqhttp/coolq"
+	"github.com/wfjsw/go-cqhttp/global"
+	"github.com/wfjsw/go-cqhttp/server"
+	asciiart "github.com/yinghau76/go-ascii-art"
 )
 
 func init() {
@@ -130,7 +131,6 @@ func main() {
 	}
 	if conf.Uin == 0 || (conf.Password == "" && conf.PasswordEncrypted == "") {
 		log.Warnf("请修改 config.json 以添加账号密码.")
-		time.Sleep(time.Second * 5)
 		return
 	}
 	if conf.Debug {
@@ -142,6 +142,7 @@ func main() {
 		client.GenRandomDevice()
 		_ = ioutil.WriteFile("device.json", client.SystemDeviceInfo.ToJson(), 0644)
 		log.Info("已生成设备信息并保存到 device.json 文件.")
+		return
 	} else {
 		log.Info("将使用 device.json 内的设备信息运行Bot.")
 		if err := client.SystemDeviceInfo.ReadJson([]byte(global.ReadAllText("device.json"))); err != nil {
@@ -166,8 +167,6 @@ func main() {
 		key := md5.Sum([]byte(strKey))
 		conf.Password = DecryptPwd(conf.PasswordEncrypted, key[:])
 	}
-	log.Info("Bot将在5秒后登录并开始信息处理, 按 Ctrl+C 取消.")
-	time.Sleep(time.Second * 5)
 	log.Info("开始尝试登录并同步消息...")
 	cli := client.NewClient(conf.Uin, conf.Password)
 	rsp, err := cli.Login()
@@ -200,7 +199,7 @@ func main() {
 	global.Check(cli.ReloadFriendList())
 	log.Infof("共加载 %v 个好友.", len(cli.FriendList))
 	log.Infof("开始加载群列表...")
-	global.Check(cli.ReloadGroupList(conf.AsyncLoad))
+	global.Check(cli.ReloadGroupList())
 	log.Infof("共加载 %v 个群.", len(cli.GroupList))
 	b := coolq.NewQQBot(cli, conf)
 	if conf.PostMessageFormat != "string" && conf.PostMessageFormat != "array" {
