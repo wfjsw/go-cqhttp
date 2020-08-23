@@ -4,6 +4,7 @@ go 1.14
 
 require (
 	github.com/fastly/go-utils v0.0.0-20180712184237-d95a45783239 // indirect
+	github.com/gin-contrib/pprof v1.3.0
 	github.com/gin-gonic/gin v1.6.3
 	github.com/gorilla/websocket v1.4.2
 	github.com/guonaihong/gout v0.1.1
@@ -16,7 +17,7 @@ require (
 	github.com/t-tomalak/logrus-easy-formatter v0.0.0-20190827215021-c074f06c5816
 	github.com/tebeka/strftime v0.1.5 // indirect
 	github.com/tidwall/gjson v1.6.0
-	github.com/wfjsw/MiraiGo v0.0.0-20200823051948-79b8a630932b
+	github.com/wfjsw/MiraiGo v0.0.0-20200823080745-b4faff04b3e5
 	github.com/xujiajun/nutsdb v0.5.0
 	github.com/yinghau76/go-ascii-art v0.0.0-20190517192627-e7f465a30189
 	golang.org/x/sys v0.0.0-20200625212154-ddb9806d33ae // indirect
