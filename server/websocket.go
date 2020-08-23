@@ -192,10 +192,8 @@ func (c *websocketClient) onBotPushEvent(m coolq.MSG) {
 				log.Warnf("向WS服务器 %v 推送Event时出现错误: %v", c.eventConn.RemoteAddr().String(), err)
 				_ = c.eventConn.Close()
 				if c.conf.ReverseReconnectInterval != 0 {
-					go func() {
-						time.Sleep(time.Millisecond * time.Duration(c.conf.ReverseReconnectInterval))
-						c.connectEvent()
-					}()
+					time.Sleep(time.Millisecond * time.Duration(c.conf.ReverseReconnectInterval))
+					c.connectEvent()
 				}
 			}
 		}()
@@ -211,10 +209,8 @@ func (c *websocketClient) onBotPushEvent(m coolq.MSG) {
 				log.Warnf("向WS服务器 %v 推送Event时出现错误: %v", c.universalConn.RemoteAddr().String(), err)
 				_ = c.universalConn.Close()
 				if c.conf.ReverseReconnectInterval != 0 {
-					go func() {
-						time.Sleep(time.Millisecond * time.Duration(c.conf.ReverseReconnectInterval))
-						c.connectUniversal()
-					}()
+					time.Sleep(time.Millisecond * time.Duration(c.conf.ReverseReconnectInterval))
+					c.connectUniversal()
 				}
 			}
 		}()
