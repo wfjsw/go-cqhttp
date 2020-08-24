@@ -68,10 +68,18 @@ func (bot *CQBot) CQGetGroupInfo(groupId int64) MSG {
 }
 
 // https://cqhttp.cc/docs/4.15/#/API?id=get_group_member_list-%E8%8E%B7%E5%8F%96%E7%BE%A4%E6%88%90%E5%91%98%E5%88%97%E8%A1%A8
-func (bot *CQBot) CQGetGroupMemberList(groupId int64) MSG {
+func (bot *CQBot) CQGetGroupMemberList(groupId int64, noCache bool) MSG {
 	group := bot.Client.FindGroup(groupId)
 	if group == nil {
 		return Failed(100)
+	}
+	if noCache {
+		t, err := bot.Client.GetGroupMembers(group)
+		if err != nil {
+			log.Warnf("刷新群 %v 成员列表失败: %v", groupId, err)
+			return Failed(100)
+		}
+		group.Members = t
 	}
 	var members []MSG
 	for _, m := range group.Members {
