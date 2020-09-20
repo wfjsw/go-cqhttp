@@ -3,6 +3,7 @@ package global
 import (
 	"bytes"
 	"compress/gzip"
+	"fmt"
 	"github.com/tidwall/gjson"
 	"io/ioutil"
 	"net/http"
@@ -41,3 +42,12 @@ func QQMusicSongInfo(id string) (gjson.Result, error) {
 	}
 	return gjson.ParseBytes(d).Get("songinfo.data"), nil
 }
+
+func NeteaseMusicSongInfo(id string) (gjson.Result, error) {
+	d, err := GetBytes(fmt.Sprintf("http://music.163.com/api/song/detail/?id=%s&ids=%%5B%s%%5D", id, id))
+	if err != nil {
+		return gjson.Result{}, err
+	}
+	return gjson.ParseBytes(d).Get("songs.0"), nil
+}
+

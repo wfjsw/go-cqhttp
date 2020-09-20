@@ -32,6 +32,9 @@ func ToFormattedMessage(e []message.IMessageElement, code int64, raw ...bool) (r
 func (bot *CQBot) privateMessageEvent(c *client.QQClient, m *message.PrivateMessage) {
 	bot.checkMedia(m.Elements)
 	cqm := ToStringMessage(m.Elements, 0, true)
+	if !m.Sender.IsFriend {
+		bot.oneWayMsgCache.Store(m.Sender.Uin, "")
+	}
 	log.Infof("收到好友 %v(%v) 的消息: %v", m.Sender.DisplayName(), m.Sender.Uin, cqm)
 	fm := MSG{
 		"post_type":    "message",
@@ -200,6 +203,65 @@ func (bot *CQBot) groupRecallEvent(c *client.QQClient, e *client.GroupMessageRec
 		"time":        e.Time,
 		"message_id":  gid,
 	})
+}
+
+func (bot *CQBot) groupNotifyEvent(c *client.QQClient, e client.IGroupNotifyEvent) {
+	group := c.FindGroup(e.From())
+	switch notify := e.(type) {
+	case *client.GroupPokeNotifyEvent:
+		sender := group.FindMember(notify.Sender)
+		receiver := group.FindMember(notify.Receiver)
+		log.Infof("群 %v 内 %v 戳了戳 %v", formatGroupName(group), formatMemberName(sender), formatMemberName(receiver))
+		bot.dispatchEventMessage(MSG{
+			"post_type":   "notice",
+			"group_id":    group.Code,
+			"notice_type": "notify",
+			"sub_type":    "poke",
+			"self_id":     c.Uin,
+			"user_id":     notify.Sender,
+			"sender_id":   notify.Sender,
+			"target_id":   notify.Receiver,
+			"time":        time.Now().Unix(),
+		})
+	case *client.GroupRedBagLuckyKingNotifyEvent:
+		sender := group.FindMember(notify.Sender)
+		luckyKing := group.FindMember(notify.LuckyKing)
+		log.Infof("群 %v 内 %v 的红包被抢完, %v 是运气王", formatGroupName(group), formatMemberName(sender), formatMemberName(luckyKing))
+		bot.dispatchEventMessage(MSG{
+			"post_type":   "notice",
+			"group_id":    group.Code,
+			"notice_type": "notify",
+			"sub_type":    "lucky_king",
+			"self_id":     c.Uin,
+			"user_id":     notify.Sender,
+			"sender_id":   notify.Sender,
+			"target_id":   notify.LuckyKing,
+			"time":        time.Now().Unix(),
+		})
+	case *client.MemberHonorChangedNotifyEvent:
+		log.Info(notify.Content())
+		bot.dispatchEventMessage(MSG{
+			"post_type":   "notice",
+			"group_id":    group.Code,
+			"notice_type": "notify",
+			"sub_type":    "honor",
+			"self_id":     c.Uin,
+			"user_id":     notify.Uin,
+			"time":        time.Now().Unix(),
+			"honor_type": func() string {
+				switch notify.Honor {
+				case client.Talkative:
+					return "talkative"
+				case client.Performer:
+					return "performer"
+				case client.Emotion:
+					return "emotion"
+				default:
+					return "ERROR"
+				}
+			}(),
+		})
+	}
 }
 
 func (bot *CQBot) friendRecallEvent(c *client.QQClient, e *client.FriendMessageRecalledEvent) {

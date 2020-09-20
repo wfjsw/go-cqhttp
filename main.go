@@ -10,6 +10,7 @@ import (
 	"image"
 	"io"
 	"io/ioutil"
+	"net"
 	"os"
 	"os/signal"
 	"path"
@@ -18,6 +19,7 @@ import (
 	"time"
 
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
+	"github.com/rifflock/lfshook"
 	log "github.com/sirupsen/logrus"
 	easy "github.com/t-tomalak/logrus-easy-formatter"
 	"github.com/wfjsw/MiraiGo/binary"
@@ -133,6 +135,46 @@ func main() {
 		log.Warnf("请修改 config.json 以添加账号密码.")
 		return
 	}
+
+	// log classified by level
+	// Collect all records up to the specified level (default level: warn)
+	logLevel := conf.LogLevel
+	if logLevel != "" {
+		date := time.Now().Format("2006-01-02")
+		var logPathMap lfshook.PathMap
+		switch conf.LogLevel {
+		case "warn":
+			logPathMap = lfshook.PathMap{
+				log.WarnLevel:  path.Join("logs", date+"-warn.log"),
+				log.ErrorLevel: path.Join("logs", date+"-warn.log"),
+				log.FatalLevel: path.Join("logs", date+"-warn.log"),
+				log.PanicLevel: path.Join("logs", date+"-warn.log"),
+			}
+		case "error":
+			logPathMap = lfshook.PathMap{
+				log.ErrorLevel: path.Join("logs", date+"-error.log"),
+				log.FatalLevel: path.Join("logs", date+"-error.log"),
+				log.PanicLevel: path.Join("logs", date+"-error.log"),
+			}
+		default:
+			logPathMap = lfshook.PathMap{
+				log.WarnLevel:  path.Join("logs", date+"-warn.log"),
+				log.ErrorLevel: path.Join("logs", date+"-warn.log"),
+				log.FatalLevel: path.Join("logs", date+"-warn.log"),
+				log.PanicLevel: path.Join("logs", date+"-warn.log"),
+			}
+		}
+
+		log.AddHook(lfshook.NewHook(
+			logPathMap,
+			&easy.Formatter{
+				TimestampFormat: "2006-01-02 15:04:05",
+				LogFormat:       "[%time%] [%lvl%]: %msg% \n",
+			},
+		))
+	}
+
+	log.Info("当前版本:", coolq.Version)
 	if conf.Debug {
 		log.SetLevel(log.DebugLevel)
 		log.Warnf("已开启Debug模式.")
@@ -169,7 +211,70 @@ func main() {
 		conf.Password = DecryptPwd(conf.PasswordEncrypted, key[:])
 	}
 	log.Info("开始尝试登录并同步消息...")
+	log.Infof("使用协议: %v", func() string {
+		switch client.SystemDeviceInfo.Protocol {
+		case client.AndroidPad:
+			return "Android Pad"
+		case client.AndroidPhone:
+			return "Android Phone"
+		case client.AndroidWatch:
+			return "Android Watch"
+		}
+		return "未知"
+	}())
 	cli := client.NewClient(conf.Uin, conf.Password)
+	cli.OnLog(func(c *client.QQClient, e *client.LogEvent) {
+		switch e.Type {
+		case "INFO":
+			log.Info("Protocol -> " + e.Message)
+		case "ERROR":
+			log.Error("Protocol -> " + e.Message)
+		case "DEBUG":
+			log.Debug("Protocol -> " + e.Message)
+		}
+	})
+	cli.OnServerUpdated(func(bot *client.QQClient, e *client.ServerUpdatedEvent) {
+		log.Infof("收到服务器地址更新通知, 将在下一次重连时应用. 地址信息已储存到 servers.bin 文件")
+		_ = ioutil.WriteFile("servers.bin", binary.NewWriterF(func(w *binary.Writer) {
+			w.WriteUInt16(func() (c uint16) {
+				for _, s := range e.Servers {
+					if !strings.Contains(s.Server, "com") {
+						c++
+					}
+				}
+				return
+			}())
+			for _, s := range e.Servers {
+				if !strings.Contains(s.Server, "com") {
+					w.WriteString(s.Server)
+					w.WriteUInt16(uint16(s.Port))
+				}
+			}
+		}), 0644)
+	})
+	if global.PathExists("servers.bin") {
+		if data, err := ioutil.ReadFile("servers.bin"); err == nil {
+			func() {
+				defer func() {
+					if pan := recover(); pan != nil {
+						log.Error("读取服务器地址时出现错误: %v", pan)
+					}
+				}()
+				r := binary.NewReader(data)
+				var addr []*net.TCPAddr
+				l := r.ReadUInt16()
+				for i := 0; i < int(l); i++ {
+					addr = append(addr, &net.TCPAddr{
+						IP:   net.ParseIP(r.ReadString()),
+						Port: int(r.ReadUInt16()),
+					})
+				}
+				if len(addr) > 0 {
+					cli.SetCustomServer(addr)
+				}
+			}()
+		}
+	}
 	rsp, err := cli.Login()
 	for {
 		global.Check(err)
@@ -209,6 +314,13 @@ func main() {
 	} else {
 		coolq.SetMessageFormat(conf.PostMessageFormat)
 	}
+	if conf.RateLimit.Enabled {
+		global.InitLimiter(conf.RateLimit.Frequency, conf.RateLimit.BucketSize)
+	}
+	log.Info("正在加载事件过滤器.")
+	global.BootFilter()
+	coolq.IgnoreInvalidCQCode = conf.IgnoreInvalidCQCode
+	coolq.ForceFragmented = conf.ForceFragmented
 	if conf.HttpConfig != nil && conf.HttpConfig.Enabled {
 		server.HttpServer.Run(fmt.Sprintf("%s:%d", conf.HttpConfig.Host, conf.HttpConfig.Port), conf.AccessToken, b)
 		for k, v := range conf.HttpConfig.PostUrls {
@@ -224,24 +336,39 @@ func main() {
 	log.Info("资源初始化完成, 开始处理信息.")
 	log.Info("アトリは、高性能ですから!")
 	cli.OnDisconnected(func(bot *client.QQClient, e *client.ClientDisconnectedEvent) {
-		if conf.ReLogin {
-			log.Warnf("Bot已离线 (%v)，将在 %v 秒后尝试重连.", e.Message, conf.ReLoginDelay)
-			time.Sleep(time.Second * time.Duration(conf.ReLoginDelay))
-			rsp, err := cli.Login()
-			if err != nil {
-				log.Fatalf("重连失败: %v", err)
-			}
-			if !rsp.Success {
-				switch rsp.Error {
-				case client.NeedCaptcha:
-					log.Fatalf("重连失败: 需要验证码. (验证码处理正在开发中)")
-				case client.UnsafeDeviceError:
-					log.Fatalf("重连失败: 设备锁")
-				default:
-					log.Fatalf("重连失败: %v", rsp.ErrorMessage)
+		if conf.ReLogin.Enabled {
+			var times uint = 1
+			for {
+
+				if conf.ReLogin.MaxReloginTimes == 0 {
+				} else if times > conf.ReLogin.MaxReloginTimes {
+					break
 				}
+				log.Warnf("Bot已离线 (%v)，将在 %v 秒后尝试重连. 重连次数：%v",
+					e.Message, conf.ReLogin.ReLoginDelay, times)
+				times++
+				time.Sleep(time.Second * time.Duration(conf.ReLogin.ReLoginDelay))
+				rsp, err := cli.Login()
+				if err != nil {
+					log.Errorf("重连失败: %v", err)
+					continue
+				}
+				if !rsp.Success {
+					switch rsp.Error {
+					case client.NeedCaptcha:
+						log.Fatalf("重连失败: 需要验证码. (验证码处理正在开发中)")
+					case client.UnsafeDeviceError:
+						log.Fatalf("重连失败: 设备锁")
+					default:
+						log.Errorf("重连失败: %v", rsp.ErrorMessage)
+						continue
+					}
+				}
+				log.Info("重连成功")
+				return
+
 			}
-			return
+			log.Fatal("重连失败: 重连次数达到设置的上限值")
 		}
 		b.Release()
 		log.Fatalf("Bot已离线：%v", e.Message)
