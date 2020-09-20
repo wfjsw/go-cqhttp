@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 	"github.com/guonaihong/gout"
 	log "github.com/sirupsen/logrus"
@@ -36,7 +35,6 @@ var HttpServer = &httpServer{}
 func (s *httpServer) Run(addr, authToken string, bot *coolq.CQBot) {
 	gin.SetMode(gin.ReleaseMode)
 	s.engine = gin.New()
-	pprof.Register(s.engine)
 	s.bot = bot
 	s.engine.Use(func(c *gin.Context) {
 		if c.Request.Method != "GET" && c.Request.Method != "POST" {
