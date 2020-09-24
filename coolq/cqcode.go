@@ -6,11 +6,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	log "github.com/sirupsen/logrus"
-	"github.com/tidwall/gjson"
-	"github.com/wfjsw/MiraiGo/binary"
-	"github.com/wfjsw/MiraiGo/message"
-	"github.com/wfjsw/go-cqhttp/global"
 	"io/ioutil"
 	"net/url"
 	"path"
@@ -18,6 +13,12 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
+	"github.com/tidwall/gjson"
+	"github.com/wfjsw/MiraiGo/binary"
+	"github.com/wfjsw/MiraiGo/message"
+	"github.com/wfjsw/go-cqhttp/global"
 )
 
 var matchReg = regexp.MustCompile(`\[CQ:\w+?.*?]`)
