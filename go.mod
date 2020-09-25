@@ -21,7 +21,7 @@ require (
 	github.com/t-tomalak/logrus-easy-formatter v0.0.0-20190827215021-c074f06c5816
 	github.com/tebeka/strftime v0.1.5 // indirect
 	github.com/tidwall/gjson v1.6.1
-	github.com/wfjsw/MiraiGo v0.0.0-20200925125158-5888d7de8f30
+	github.com/wfjsw/MiraiGo v0.0.0-20200925132737-82261d613a17
 	github.com/xujiajun/nutsdb v0.5.0
 	github.com/yinghau76/go-ascii-art v0.0.0-20190517192627-e7f465a30189
 	golang.org/x/net v0.0.0-20200904194848-62affa334b73 // indirect
