@@ -524,4 +524,7 @@ var httpApi = map[string]func(s *httpServer, c *gin.Context){
 	".handle_quick_operation": func(s *httpServer, c *gin.Context) {
 		s.HandleQuickOperation(c)
 	},
+	"reload_session": func(s *httpServer, c *gin.Context) {
+		c.JSON(200, s.bot.CQReloadSession())
+	},
 }

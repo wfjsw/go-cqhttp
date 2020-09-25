@@ -727,6 +727,11 @@ func (bot *CQBot) CQGetCredentials(domain string) MSG {
 	}
 }
 
+func (bot *CQBot) CQReloadSession() MSG {
+	bot.Client.RefreshSession()
+	return OK(MSG{})
+}
+
 func OK(data interface{}) MSG {
 	return MSG{"data": data, "retcode": 0, "status": "ok"}
 }
